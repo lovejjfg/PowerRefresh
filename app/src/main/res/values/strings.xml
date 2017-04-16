@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PowerRefresh</string>
+
+    <!--下拉刷新-->
+    <string name="pull_refresh_label">下拉刷新</string>
+    <string name="pull_release_label">松开刷新</string>
+</resources>
