@@ -178,10 +178,12 @@ public class TouchCircleView extends View {
     public TouchCircleView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         float density = context.getResources().getDisplayMetrics().density;
-        defaultOffset = (int) (16 * density);
-        firstRange = (int) (80f * density);
-        secRange = (int) (114f * density);
+        defaultOffset = (int) (40 * density);
+        firstRange = (int) (60f * density);
+        secRange = (int) (150 * density);
         thirdRange = (int) (158f * density);
+
+        currentOffset = 40 * density;
 
         outPathMax = 36 * density;
         pathMax = 30 * density;
@@ -271,7 +273,7 @@ public class TouchCircleView extends View {
             paint.setAlpha((int) (percent * ALPHA_FULL));
             updateState(STATE_DRAW_ARC, false);
             resetAngle();
-            currentOffset = percent * defaultOffset;
+            currentOffset = (1 + percent) * defaultOffset;
             updateRectF();
             angle = (long) (percent * 360);
             Log.i(TAG, "onTouchEvent: " + angle);
@@ -286,60 +288,9 @@ public class TouchCircleView extends View {
             percent = (dy - firstRange) / (secRange - firstRange);
             mCurrentSweepAngle = mCurrentGlobalAngle = percent * 100;
             invalidate();
-            return;
-        }
-        //正常顺序到达这里
-        if (!translateAnimator.isRunning() && (currentState == STATE_DRAW_ARROW || currentState == STATE_DRAW_PATH) && dy > secRange && dy <= thirdRange) {
-            isBack = false;
-            Log.e(TAG, "handleOffset: 画正常的PATH了" + dy);
-            updateState(STATE_DRAW_PATH, false);
-//            paths = dy - 380;
-            percent = (dy - secRange) / (thirdRange - secRange);
-//            paths = (long) (percent * pathMax > 20 * density ? 20 * density : percent * pathMax);
-            Log.e("percent", "handleOffset: " + percent);
-            paths = (int) (percent * pathMax);
-            changeDy = paths * 0.1f;
-            innerPaint.setAlpha((int) ((1 - percent) * ALPHA_FULL));
-//                mArrowScale = precent;
-            outRectF.set(centerX - outCirRadius + percent * .2f * outCirRadius, .1f * outCirRadius * percent + currentOffset, centerX + outCirRadius - percent * .2f * outCirRadius
-                    , centerY + outCirRadius + 0.18f * outCirRadius * percent + currentOffset);
-            if (percent > 0.9f) {
-                translateAnimator.setFloatValues(outRectF.centerY(), secondRectf.centerY());
-                translateAnimator.start();
-                return;
-            }
-            invalidate();
-            return;
-        }
-
-        if (!translateAnimator.isRunning() && (currentState == STATE_DRAW_CIRCLE || currentState == STATE_DRAW_OUT_PATH) && dy > secRange && dy <= thirdRange) {
-            isBack = true;
-            Log.e(TAG, "handleOffset: 画PATH了" + dy);
-            updateState(STATE_DRAW_OUT_PATH, false);
-            percent = (thirdRange - dy) / (thirdRange - secRange);
-            Log.e("percent", "handleOffset: " + percent);
-//            secondRectf.set(centerX - outCirRadius, currentOffset + outCirRadius * 2, centerX + outCirRadius
-//                    , centerY + outCirRadius + currentOffset + outCirRadius * 2);
-            secondRectf.set(centerX - secondRadius + percent * secondRadius * .25f, currentOffset + secondRadius * 2 + percent * secondRadius * .5f, centerX + secondRadius - percent * .25f * secondRadius
-                    , centerY + secondRadius + currentOffset + secondRadius * 2 + percent * .1f * secondRadius);
-            backpaths = (long) (-outPathMax * percent);
-            changeDy = backpaths * 0.1f;
-            if (percent > 0.9f) {
-                translateAnimator.setFloatValues(secondRectf.centerY(), outRectF.centerY());
-                translateAnimator.start();
-                return;
-            }
-            invalidate();
-            return;
         }
 
 
-        if (dy > thirdRange) {
-            Log.e(TAG, "handleOffset: 画第二个圆形了" + dy);
-            updateState(STATE_DRAW_CIRCLE, false);
-            updateRectF();
-            invalidate();
-        }
     }
 
     private void updateState(int state, boolean hide) {
@@ -386,6 +337,7 @@ public class TouchCircleView extends View {
             updateState(STATE_DRAW_BACK, true);
         }
         stop();
+        currentOffset = 0;
         updateState(STATE_DRAW_IDLE, true);
         invalidate();
 

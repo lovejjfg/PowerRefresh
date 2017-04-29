@@ -7,13 +7,7 @@ package com.lovejjfg.powerrefresh;
 
 public interface OnRefreshListener {
 
-    /**
-     * 刷新回调
-     */
     void onRefresh();
 
-    /**
-     * 加载更多回调
-     */
     void onLoadMore();
 }

@@ -4,9 +4,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -24,6 +22,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements OnRefreshListener {
 
     private PowerRefreshLayout mRefreshLayout;
+    private MyAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,20 +31,18 @@ public class MainActivity extends AppCompatActivity implements OnRefreshListener
         RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.recycler);
         mRefreshLayout = (PowerRefreshLayout) findViewById(R.id.refresh_layout);
         mRefreshLayout.setOnRefreshListener(this);
-        HeaderView header = new HeaderView(this);
+        CircleHeaderView header = new CircleHeaderView(this);
         FootView footView = new FootView(this);
         mRefreshLayout.addHeader(header);
         mRefreshLayout.addFooter(footView);
-        mRefreshLayout.setOnHeaderListener(header);
-//        mRefreshLayout.setAutoLoadMore(true);
-//        mRefreshLayout.setOnFooterListener(footView);
-//        mRecyclerView.setLayoutFrozen();
-//        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
-        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
-        MyAdapter mAdapter = new MyAdapter();
+        mRefreshLayout.setAutoLoadMore(true);
+        mRefreshLayout.setAutoRefresh(true);
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+//        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
+        mAdapter = new MyAdapter();
         mRecyclerView.setAdapter(mAdapter);
         List<String> mlist = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10; i++) {
             mlist.add("nice" + i);
         }
         mAdapter.setList(mlist);
@@ -69,15 +66,20 @@ public class MainActivity extends AppCompatActivity implements OnRefreshListener
             public void run() {
                 mRefreshLayout.stopLoadMore(true);
                 Log.e("TAG", "run: 可以加载更多了");
+                List<String> mlist = new ArrayList<>();
+                for (int i = 0; i < 10; i++) {
+                    mlist.add("nice" + i);
+                }
+                mAdapter.appendList(mlist);
             }
-        }, 10000);
+        }, 1000);
     }
 
     static class MyAdapter extends PowerAdapter<String> {
         @Override
         public RecyclerView.ViewHolder onViewHolderCreate(ViewGroup parent, int viewType) {
             float density = parent.getContext().getResources().getDisplayMetrics().density;
-           TextView mFoot = new TextView(parent.getContext());
+            TextView mFoot = new TextView(parent.getContext());
             mFoot.setBackgroundColor(Color.parseColor("#333333"));
             double random = Math.random();
             int height = (int) (30 * random);
@@ -106,6 +108,5 @@ public class MainActivity extends AppCompatActivity implements OnRefreshListener
             mText.setText(s);
         }
     }
-
 
 }

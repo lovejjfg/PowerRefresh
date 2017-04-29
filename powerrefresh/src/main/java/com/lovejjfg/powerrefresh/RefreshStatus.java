@@ -9,9 +9,6 @@ enum RefreshStatus {
 
     DEFAULT,//默认状态
 
-    /**
-     * 刷新状态
-     */
     REFRESH_BEFORE,   // 下拉刷新中  还没有达到可以刷新之前的时候
     REFRESH_AFTER,    // 松开刷新    下拉已经到达可以刷新的时候
     REFRESH_READY,    // 准备刷新状态 达到可以刷新的时候松开手指回到刷新的位置状态

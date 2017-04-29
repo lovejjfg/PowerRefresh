@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.NestedScrollingChild;
 import android.support.v4.view.NestedScrollingChildHelper;
@@ -12,7 +13,6 @@ import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -24,57 +24,30 @@ import android.widget.AbsListView;
 
 public class PowerRefreshLayout extends ViewGroup implements NestedScrollingParent, NestedScrollingChild {
     private static final String TAG = PowerRefreshLayout.class.getSimpleName();
-    //操作状态  -1是默认的状态   0刷新   1加载
     private static final int STATE_DEFAULT = -1;
     private static final int STATE_REFRESH = 11;
     private static final int STATE_LOADMORE = 12;
-    //头部布局
     public View header;
-    //头部content
-    public View headerContent;
-    //底部布局
     public View footer;
-    //头部下拉监听接口
     @Nullable
-    public OnHeaderListener mOnHeaderListener;
-    //底部上啦监听接口
+    public HeaderListener mHeaderListener;
     @Nullable
-    public OnFooterListener mOnFooterListener;
-    // 当滚动到内容最底部时Y轴所需要的滑动值
+    public FooterListener mFooterListener;
     public int bottomScroll;
-    // 最后一个childview的index
-    public int lastChildIndex;
-
     private View mTarget; // the target of the gesture
-
-    // 事件监听接口
     private OnRefreshListener listener;
-    // Layout状态
     private RefreshStatus refreshStatus = RefreshStatus.DEFAULT;
-    private RefreshStatus loadStatus = RefreshStatus.DEFAULT;
-    //阻尼系数
     private float damp = 0.5f;
-    //恢复动画的执行时间
-    public int SCROLL_TIME = 300;
-    //是否刷新完成
+    public int ANIMATION_DURATION = 300;
     private boolean isRefreshSuccess = false;
-    //是否加载完成
     private boolean isLoadSuccess = false;
-    //正在加载中
     public boolean isLoading = false;
-    //正在刷新中
     public boolean isRefreshing = false;
-    //是否自动下拉刷新
     private boolean isAutoRefresh = false;
-    //是否自动加载更多
-    private boolean isAutoLoad = false;
-
-    private int actionStatus = STATE_DEFAULT;
-
-    //是否可以加载更多
-    public boolean isCanLoad = true;
-    //是否可以下拉刷新
-    public boolean isCanRefresh = true;
+    private boolean isAutoLoad = true;
+    private int currentStatus = STATE_DEFAULT;
+    public boolean loadEnable = true;
+    public boolean refreshEnable = true;
 
     private final NestedScrollingParentHelper mNestedScrollingParentHelper;
     private final NestedScrollingChildHelper mNestedScrollingChildHelper;
@@ -97,6 +70,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         mNestedScrollingParentHelper = new NestedScrollingParentHelper(this);
         mNestedScrollingChildHelper = new NestedScrollingChildHelper(this);
         setNestedScrollingEnabled(true);
+        ensureTarget();
     }
 
 
@@ -159,6 +133,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     @Override
     public boolean onNestedPreFling(View target, float velocityX,
                                     float velocityY) {
+
         return dispatchNestedPreFling(velocityX, velocityY);
     }
 
@@ -188,23 +163,18 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
         // If we are in the middle of consuming, a scroll, then we want to move the spinner back up
         // before allowing the list to scroll
-        Log.e(TAG, "onNestedPreScroll: dy::" + dy);
-        if (header != null && !isRefreshing && actionStatus == STATE_REFRESH && dy > 0 && mTotalUnconsumed > 0) {
-//            if (dy > mTotalUnconsumed) {
-//                consumed[1] = dy - (int) mTotalUnconsumed;
-//                mTotalUnconsumed = 0;
-//            } else {
-//                mTotalUnconsumed -= dy;
-//                consumed[1] = dy;
-//            }
-//            moveSpinner(mTotalUnconsumed);
-//            if(actionStatus==-1)actionStatus=0;
+        if (refreshEnable && header != null && !isRefreshing && currentStatus == STATE_REFRESH && dy > 0 && mTotalUnconsumed > 0) {
             mTotalUnconsumed -= dy;
+
+            if (mTotalUnconsumed <= 0) {//over
+                mTotalUnconsumed = 0;
+                dy = (int) (-getScrollY() / damp);
+            }
             goToRefresh(-dy);
             consumed[1] = dy;
         }
 
-        if (dy < 0 && mTotalUnconsumedLoadMore > 0 && footer != null && actionStatus == STATE_LOADMORE) {
+        if (loadEnable && !isLoading && footer != null && dy < 0 && getScrollY() >= bottomScroll && mTotalUnconsumedLoadMore > 0 && currentStatus == STATE_LOADMORE) {
             mTotalUnconsumedLoadMore += dy;
             goToLoad(dy);
             consumed[1] = dy;
@@ -234,17 +204,17 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
                 mParentOffsetInWindow);
 
         final int dy = dyUnconsumed + mParentOffsetInWindow[1];
-        Log.e(TAG, "onNestedScroll: dy::" + dy);
-        if (header != null && dy < 0 && !isRefreshing && !canChildScrollUp()) {
+        if (refreshEnable && header != null && dy < 0 && !isRefreshing && !canChildScrollUp()) {
             mTotalUnconsumed += Math.abs(dy);
-            if (actionStatus == STATE_DEFAULT) actionStatus = STATE_REFRESH;
-            Log.e(TAG, "onNestedScroll:mTotalUnconsumed:: " + mTotalUnconsumed);
+            if (currentStatus == STATE_DEFAULT || mTotalUnconsumed != 0)
+                currentStatus = STATE_REFRESH;
             goToRefresh(Math.abs(dy));
         }
 
-        if ((isAutoLoad || footer != null) && dy > 0 && !isLoading && mTotalUnconsumedLoadMore <= 4 * footHeight) {
+        if (loadEnable && (isAutoLoad || footer != null) && getScrollY() >= bottomScroll && dy > 0 && !isLoading && mTotalUnconsumedLoadMore <= 4 * footHeight) {
             mTotalUnconsumedLoadMore += dy;
-            if (actionStatus == STATE_DEFAULT) actionStatus = STATE_LOADMORE;
+            if (currentStatus == STATE_DEFAULT || mTotalUnconsumedLoadMore != 0)
+                currentStatus = STATE_LOADMORE;
             goToLoad(dy);
         }
 
@@ -258,7 +228,6 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
 
     @Override
     public void onStopNestedScroll(View target) {
-        Log.e(TAG, "onStopNestedScroll: ");
         mNestedScrollingParentHelper.onStopNestedScroll(target);
         mNestedScrollInProgress = false;
         // Finish the spinner for nested scrolling if we ever consumed any
@@ -279,10 +248,10 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
                 scrollToDefaultStatus(RefreshStatus.LOAD_CANCEL);
                 break;
             case LOAD_AFTER:
-                scrolltoLoadStatus();
+                scrollToLoadStatus();
                 break;
             default:
-                actionStatus = STATE_DEFAULT;
+                currentStatus = STATE_DEFAULT;
                 break;
         }
         mTotalUnconsumed = 0;
@@ -293,58 +262,51 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     }
 
     /**
-     * 设置头部监听回调
+     * Call this method to add {@link HeaderListener} ,It's better to make the {@link #header} to impl.
      */
-    public void setOnHeaderListener(OnHeaderListener mOnHeaderListener) {
-        this.mOnHeaderListener = mOnHeaderListener;
+    public void setOnHeaderListener(HeaderListener mHeaderListener) {
+        this.mHeaderListener = mHeaderListener;
     }
 
     /**
-     * 设置底部监听回调
+     * Call this method to add {@link FooterListener} ,It's better to make the {@link #footer} to impl.
      */
-    public void setOnFooterListener(OnFooterListener mOnFooterListener) {
-        this.mOnFooterListener = mOnFooterListener;
+    public void setOnFooterListener(FooterListener mFooterListener) {
+        this.mFooterListener = mFooterListener;
     }
 
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        //获取最后一个子view的index 等于所有子view的数量-1
-        lastChildIndex = getChildCount() - 1;
+        ensureTarget();
     }
 
     /**
-     * 添加上拉刷新布局作为header
-     *
-     * @param header 头布局
+     * add the refresh view.
      */
-    public void addHeader(View header) {
+    public void addHeader(@NonNull View header) {
         this.header = header;
-        headerContent = header; //=header.findViewById(R.id.pull_to_refresh_text);
-//        if(headerContent==null)headerContent=header;
+        if (header instanceof HeaderListener) {
+            mHeaderListener = (HeaderListener) header;
+        }
         LayoutParams layoutParams = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
         addView(header, layoutParams);
     }
 
     /**
-     * 添加下拉加载布局作为footer
-     *
-     * @param footer 底布局
+     * add the footer view.
      */
-    public void addFooter(View footer) {
+    public void addFooter(@NonNull View footer) {
         this.footer = footer;
+        if (footer instanceof FooterListener) {
+            mFooterListener = (FooterListener) footer;
+        }
         LayoutParams layoutParams = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
         addView(footer, layoutParams);
     }
 
-    /**
-     * 测量方法  遍历左右子view进行测量  当子view显示状态为GONE的时候不测量
-     *
-     * @param widthMeasureSpec
-     * @param heightMeasureSpec
-     */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -365,37 +327,41 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        // 重置(避免重复累加)
         int contentHeight = 0;
-        final int width = getMeasuredWidth();
-        final int height = getMeasuredHeight();
+        int width = getMeasuredWidth();
+        int height = getMeasuredHeight();
+        int childLeft = getPaddingLeft();
+        int childRight = getPaddingLeft();
+        int childTop = getPaddingTop();
+        int childWidth = width - childLeft - childRight;
+        int childHeight;
+        View child;
+        if (header != null) {
+            child = header;
+            headerHeight = child.getMeasuredHeight();
+            child.layout(childLeft, childTop - headerHeight, childLeft + childWidth, childTop);
+        }
+        //make sure there is the target!
         if (mTarget == null) {
             ensureTarget();
         }
         if (mTarget == null) {
             return;
         }
-        View child = mTarget;
-        final int childLeft = getPaddingLeft();
-        final int childTop = getPaddingTop();
-        final int childWidth = width - getPaddingLeft() - getPaddingRight();
-        final int childHeight = height - getPaddingTop() - getPaddingBottom();
+        child = mTarget;
+        childLeft = getPaddingLeft();
+        childTop = getPaddingTop();
+        childWidth = width - getPaddingLeft() - getPaddingRight();
+        childHeight = height - getPaddingTop() - getPaddingBottom();
         child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
         contentHeight += child.getMeasuredHeight();
-        // 计算到达内容最底部时ViewGroup的滑动距离
-        if (header != null) {
-            child = header;
-            headerHeight = child.getMeasuredHeight();
-            child.layout(0, 0 - headerHeight, child.getMeasuredWidth(), 0);
-            // TODO: 2017/4/16  
-//            child.layout(0, 0, child.getMeasuredWidth(), headerHeight);
-        }
+
         if (footer != null) {
             child = footer;
             footHeight = child.getMeasuredHeight();
             child.layout(0, contentHeight, child.getMeasuredWidth(), contentHeight + footHeight);
         }
-        bottomScroll = contentHeight - getMeasuredHeight();      // 遍历进行子视图的置位工作
+        bottomScroll = contentHeight - getMeasuredHeight();
 
 
     }
@@ -469,38 +435,29 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     }
 
 
-    /**
-     * 设置是否支持下拉刷新
-     */
-    public void setCanRefresh(boolean isCanRefresh) {
-        this.isCanRefresh = isCanRefresh;
+    public void setRefreshEnable(boolean isCanRefresh) {
+        this.refreshEnable = isCanRefresh;
+    }
+
+    public void setLoadEnable(boolean isCanLoad) {
+        this.loadEnable = isCanLoad;
     }
 
     /**
-     * 设置是否支持加载更多
+     * call this method to auto refresh when first init.
+     *
+     * @param isAutoRefresh true go to refresh ,false otherwise.
      */
-    public void setCanLoad(boolean isCanLoad) {
-        this.isCanLoad = isCanLoad;
-    }
-
-    /**
-     * 设置是否支持自动刷新
-     */
-    @SuppressWarnings("unused")
     public void setAutoRefresh(boolean isAutoRefresh) {
         this.isAutoRefresh = isAutoRefresh;
         autoRefresh();
     }
 
-
-    /**
-     * 自动刷新
-     */
-    public void autoRefresh() {
+    private void autoRefresh() {
         if (!isAutoRefresh) return;
         isRefreshing = true;
         measureView(header);
-        int end = headerContent.getMeasuredHeight();
+        int end = mHeaderListener != null && mHeaderListener.getRefreshHeight() != 0 ? mHeaderListener.getRefreshHeight() : headerHeight;
         performAnim(0, -end, new AnimListener() {
             @Override
             public void onGoing() {
@@ -515,9 +472,26 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
 
     }
 
-    /**
-     * 测量view
-     */
+    public void autoLoad() {
+        if (!isAutoLoad) return;
+        isAutoLoad = true;
+//        measureView(footer);
+        int end = footHeight;
+        performAnim(bottomScroll, bottomScroll + end, new AnimListener() {
+            @Override
+            public void onGoing() {
+                updateStatus(RefreshStatus.LOAD_READY);
+            }
+
+            @Override
+            public void onEnd() {
+                updateStatus(RefreshStatus.LOAD_DOING);
+            }
+        });
+
+    }
+
+
     public void measureView(View v) {
         if (v == null) {
             return;
@@ -530,19 +504,19 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     }
 
     /**
-     * 设置接口回调
+     * Set the listener to be notified when a refresh is triggered via the swipe
+     * gesture.
      */
     public void setOnRefreshListener(OnRefreshListener listener) {
         this.listener = listener;
     }
 
-    /**
-     * 去刷新
-     */
     private void goToRefresh(int dy) {
-        if (actionStatus == STATE_REFRESH) {
+        int scrollY = getScrollY();
+        if (currentStatus == STATE_REFRESH) {
             performScroll(dy);
-            if (Math.abs(getScrollY()) > headerContent.getMeasuredHeight()) {
+            int end = mHeaderListener != null && mHeaderListener.getRefreshHeight() != 0 ? mHeaderListener.getRefreshHeight() : headerHeight;
+            if (Math.abs(scrollY) > end) {
                 updateStatus(RefreshStatus.REFRESH_AFTER);
             } else {
                 updateStatus(RefreshStatus.REFRESH_BEFORE);
@@ -550,15 +524,11 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         }
     }
 
-    /**
-     * 去加载
-     */
     private void goToLoad(int dy) {
-//        if (footer == null) {
-//            return;
-//        }
-        if (actionStatus == STATE_LOADMORE) {
-            // 进行Y轴上的滑动
+        if (footer == null && !isAutoLoad) {
+            return;
+        }
+        if (currentStatus == STATE_LOADMORE) {
             performScroll(-dy);
             if (getScrollY() >= bottomScroll + footHeight) {
                 updateStatus(RefreshStatus.LOAD_AFTER);
@@ -569,109 +539,86 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     }
 
 
-    /**
-     * 刷新状态
-     */
     private void updateStatus(RefreshStatus status) {
         this.refreshStatus = status;
         int scrollY = getScrollY();
-        // 判断本次触摸系列事件结束时,Layout的状态
         switch (status) {
-            //默认状态
             case DEFAULT:
                 onDefault();
                 break;
-            //下拉刷新
             case REFRESH_BEFORE:
-                if (mOnHeaderListener != null) {
-                    mOnHeaderListener.onRefreshBefore(scrollY, headerContent.getMeasuredHeight(), headerHeight);
+                if (mHeaderListener != null) {
+                    mHeaderListener.onRefreshBefore(scrollY, headerHeight);
                 }
                 break;
-            //松手刷新
             case REFRESH_AFTER:
-                if (mOnHeaderListener != null) {
-                    mOnHeaderListener.onRefreshAfter(scrollY, headerContent.getMeasuredHeight(), headerHeight);
+                if (mHeaderListener != null) {
+                    mHeaderListener.onRefreshAfter(scrollY, headerHeight);
                 }
                 break;
-            //准备刷新
             case REFRESH_READY:
-                if (mOnHeaderListener != null) {
-                    mOnHeaderListener.onRefreshReady(scrollY, headerContent.getMeasuredHeight(), headerHeight);
+                if (mHeaderListener != null) {
+                    mHeaderListener.onRefreshReady(scrollY, headerHeight);
                 }
                 break;
-            //刷新中
             case REFRESH_DOING:
-                if (mOnHeaderListener != null) {
-                    mOnHeaderListener.onRefreshing(scrollY, headerContent.getMeasuredHeight(), headerHeight);
+                if (mHeaderListener != null) {
+                    mHeaderListener.onRefreshing(scrollY, headerHeight);
                 }
                 if (listener != null)
                     listener.onRefresh();
                 break;
-            //刷新完成
             case REFRESH_COMPLETE:
-                if (mOnHeaderListener != null) {
-                    mOnHeaderListener.onRefreshComplete(scrollY, headerContent.getMeasuredHeight(), headerHeight, isRefreshSuccess);
+                if (mHeaderListener != null) {
+                    mHeaderListener.onRefreshComplete(scrollY, headerHeight, isRefreshSuccess);
                 }
                 break;
-            //取消刷新
             case REFRESH_CANCEL:
-                if (mOnHeaderListener != null) {
-                    mOnHeaderListener.onRefreshCancel(scrollY, headerContent.getMeasuredHeight(), headerHeight);
+                if (mHeaderListener != null) {
+                    mHeaderListener.onRefreshCancel(scrollY, headerHeight);
                 }
                 break;
-            //上拉加载更多
             case LOAD_BEFORE:
-                if (mOnFooterListener != null) {
-                    mOnFooterListener.onLoadBefore(scrollY);
+                if (mFooterListener != null) {
+                    mFooterListener.onLoadBefore(scrollY);
                 }
                 break;
-            //松手加载
             case LOAD_AFTER:
-                if (mOnFooterListener != null) {
-                    mOnFooterListener.onLoadAfter(scrollY);
+                if (mFooterListener != null) {
+                    mFooterListener.onLoadAfter(scrollY);
                 }
                 break;
-            //准备加载
             case LOAD_READY:
-                if (mOnFooterListener != null) {
-                    mOnFooterListener.onLoadReady(scrollY);
+                if (mFooterListener != null) {
+                    mFooterListener.onLoadReady(scrollY);
                 }
                 break;
-            //加载中
             case LOAD_DOING:
-                if (mOnFooterListener != null) {
-                    mOnFooterListener.onLoading(scrollY);
+                if (mFooterListener != null) {
+                    mFooterListener.onLoading(scrollY);
                 }
                 if (listener != null)
                     listener.onLoadMore();
                 break;
-            //加载完成
             case LOAD_COMPLETE:
-                if (mOnFooterListener != null) {
-                    mOnFooterListener.onLoadComplete(scrollY, isLoadSuccess);
+                if (mFooterListener != null) {
+                    mFooterListener.onLoadComplete(scrollY, isLoadSuccess);
                 }
                 break;
-            //取消加载
             case LOAD_CANCEL:
-                if (mOnFooterListener != null) {
-                    mOnFooterListener.onLoadCancel(scrollY);
+                if (mFooterListener != null) {
+                    mFooterListener.onLoadCancel(scrollY);
                 }
                 break;
         }
     }
 
-    /**
-     * 默认状态
-     */
     private void onDefault() {
         isRefreshSuccess = false;
         isLoadSuccess = false;
     }
 
-    /**
-     * 滚动到加载状态
-     */
-    private void scrolltoLoadStatus() {
+    private void scrollToLoadStatus() {
         isLoading = true;
         int start = getScrollY();
         int end = footHeight + bottomScroll;
@@ -688,13 +635,10 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         });
     }
 
-    /**
-     * 滚动到刷新状态
-     */
     private void scrollToRefreshStatus() {
         isRefreshing = true;
         int start = getScrollY();
-        int end = -headerContent.getMeasuredHeight();
+        int end = mHeaderListener != null && mHeaderListener.getRefreshHeight() != 0 ? -mHeaderListener.getRefreshHeight() : -headerHeight;
         performAnim(start, end, new AnimListener() {
             @Override
             public void onGoing() {
@@ -708,9 +652,6 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         });
     }
 
-    /**
-     * 滚动到默认状态
-     */
     private void scrollToDefaultStatus(final RefreshStatus startStatus) {
         int start = getScrollY();
         int end = 0;
@@ -727,41 +668,26 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         });
     }
 
-    /**
-     * 停止刷新
-     */
     public void stopRefresh(boolean isSuccess) {
         isRefreshSuccess = isSuccess;
         isRefreshing = false;
         scrollToDefaultStatus(RefreshStatus.REFRESH_COMPLETE);
     }
 
-    /**
-     * 停止加载更多
-     */
     public void stopLoadMore(boolean isSuccess) {
         isLoadSuccess = isSuccess;
         isLoading = false;
         scrollToDefaultStatus(RefreshStatus.LOAD_COMPLETE);
     }
 
-    /**
-     * 执行滑动
-     */
     public void performScroll(int dy) {
-        Log.e(TAG, "onRefreshBefore: " + dy);
-        scrollBy(0, (int) (-dy * damp));
-        // TODO: 2017/4/16
-//        mTarget.setTranslationY(-dy * damp);
-
+        float ddy = -dy * damp;
+        scrollBy(0, (int) (ddy));
     }
 
-    /**
-     * 执行动画
-     */
     private void performAnim(int start, int end, final AnimListener listener) {
         ValueAnimator animator = ValueAnimator.ofInt(start, end);
-        animator.setDuration(SCROLL_TIME).start();
+        animator.setDuration(ANIMATION_DURATION).start();
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {

@@ -5,7 +5,7 @@ import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import com.lovejjfg.powerrefresh.OnHeaderListener;
+import com.lovejjfg.powerrefresh.HeaderListener;
 
 
 /**
@@ -13,19 +13,23 @@ import com.lovejjfg.powerrefresh.OnHeaderListener;
  * Email lovejjfg@gmail.com
  */
 
-public class HeaderView extends FrameLayout implements OnHeaderListener {
+public class CircleHeaderView extends FrameLayout implements HeaderListener {
+
+    public TouchCircleView getmHeader() {
+        return mHeader;
+    }
 
     //    private final ImageView mHeaderImageView;
 //    private final AnimationDrawable mFrameAnimation;
 //    private final int mNumberOfFrames;
     private final TouchCircleView mHeader;
 
-    public HeaderView(Context context) {
+    public CircleHeaderView(Context context) {
         super(context);
         float density = context.getResources().getDisplayMetrics().density;
         mHeader = new TouchCircleView(context);
 
-        addView(mHeader, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (density * 130)));
+        addView(mHeader, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (density * 150)));
 
 //        LayoutInflater.from(context).inflate(R.layout.layout_header_loading, this, true);
 //        mHeaderImageView = (ImageView) findViewById(R.id.pull_to_refresh_image);
@@ -40,7 +44,7 @@ public class HeaderView extends FrameLayout implements OnHeaderListener {
      * @param scrollY
      */
     @Override
-    public void onRefreshBefore(int scrollY, int refreshHeight, int headerHeight) {
+    public void onRefreshBefore(int scrollY, int headerHeight) {
         Log.e("TAG", "onRefreshBefore: " + scrollY);
         mHeader.handleOffset(-scrollY);
 //        mHeaderImageView.setBackgroundDrawable(mFrameAnimation.getFrame(current));
@@ -53,9 +57,9 @@ public class HeaderView extends FrameLayout implements OnHeaderListener {
      * @param scrollY
      */
     @Override
-    public void onRefreshAfter(int scrollY, int refreshHeight, int headerHeight) {
+    public void onRefreshAfter(int scrollY, int headerHeight) {
 //        mHeaderImageView.setBackgroundDrawable(mFrameAnimation.getFrame(mNumberOfFrames - 1));
-        mHeader.resetTouch();
+        mHeader.setRefresh(true);
     }
 
     /**
@@ -64,7 +68,7 @@ public class HeaderView extends FrameLayout implements OnHeaderListener {
      * @param scrollY
      */
     @Override
-    public void onRefreshReady(int scrollY, int refreshHeight, int headerHeight) {
+    public void onRefreshReady(int scrollY, int headerHeight) {
 
     }
 
@@ -74,8 +78,8 @@ public class HeaderView extends FrameLayout implements OnHeaderListener {
      * @param scrollY
      */
     @Override
-    public void onRefreshing(int scrollY, int refreshHeight, int headerHeight) {
-        mHeader.handleOffset(refreshHeight);
+    public void onRefreshing(int scrollY, int headerHeight) {
+
     }
 
     /**
@@ -85,7 +89,13 @@ public class HeaderView extends FrameLayout implements OnHeaderListener {
      * @param isRefreshSuccess 刷新的状态  是成功了 还是失败了
      */
     @Override
-    public void onRefreshComplete(int scrollY, int refreshHeight, int headerHeight, boolean isRefreshSuccess) {
+    public void onRefreshComplete(int scrollY, int headerHeight, boolean isRefreshSuccess) {
+        if (isRefreshSuccess) {
+            mHeader.setRefreshSuccess();
+
+        } else {
+            mHeader.setRefreshError();
+        }
 
     }
 
@@ -95,7 +105,17 @@ public class HeaderView extends FrameLayout implements OnHeaderListener {
      * @param scrollY
      */
     @Override
-    public void onRefreshCancel(int scrollY, int refreshHeight, int headerHeight) {
+    public void onRefreshCancel(int scrollY, int headerHeight) {
+
+    }
+
+    @Override
+    public int getRefreshHeight() {
+        return (int) (getMeasuredHeight()*0.8f);
+    }
+
+    public void refreshCompleted() {
+        mHeader.setRefreshSuccess();
 
     }
 }

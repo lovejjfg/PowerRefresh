@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import com.lovejjfg.powerrefresh.OnFooterListener;
+import com.lovejjfg.powerrefresh.FooterListener;
 
 
 /**
@@ -15,7 +15,7 @@ import com.lovejjfg.powerrefresh.OnFooterListener;
  * Email lovejjfg@gmail.com
  */
 
-public class FootView extends FrameLayout implements OnFooterListener {
+public class FootView extends FrameLayout implements FooterListener {
 
     //    private final ImageView mHeaderImageView;
 //    private final AnimationDrawable mFrameAnimation;
