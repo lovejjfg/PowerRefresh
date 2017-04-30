@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2017.  Joe
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.lovejjfg.demo;
 
 import android.content.Context;
@@ -59,7 +72,6 @@ public class CircleHeaderView extends FrameLayout implements HeaderListener {
     @Override
     public void onRefreshAfter(int scrollY, int headerHeight) {
 //        mHeaderImageView.setBackgroundDrawable(mFrameAnimation.getFrame(mNumberOfFrames - 1));
-        mHeader.setRefresh(true);
     }
 
     /**
@@ -69,7 +81,7 @@ public class CircleHeaderView extends FrameLayout implements HeaderListener {
      */
     @Override
     public void onRefreshReady(int scrollY, int headerHeight) {
-
+        mHeader.setRefresh(true);
     }
 
     /**
@@ -79,20 +91,16 @@ public class CircleHeaderView extends FrameLayout implements HeaderListener {
      */
     @Override
     public void onRefreshing(int scrollY, int headerHeight) {
-
+        mHeader.setRefresh(true);
     }
 
     /**
-     * 刷新成功
-     *
-     * @param scrollY
-     * @param isRefreshSuccess 刷新的状态  是成功了 还是失败了
+     * this method will callback not only once.
      */
     @Override
     public void onRefreshComplete(int scrollY, int headerHeight, boolean isRefreshSuccess) {
         if (isRefreshSuccess) {
             mHeader.setRefreshSuccess();
-
         } else {
             mHeader.setRefreshError();
         }
@@ -115,7 +123,6 @@ public class CircleHeaderView extends FrameLayout implements HeaderListener {
     }
 
     public void refreshCompleted() {
-        mHeader.setRefreshSuccess();
 
     }
 }

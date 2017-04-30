@@ -1,11 +1,26 @@
+/*
+ * Copyright (c) 2017.  Joe
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.lovejjfg.powerrefresh;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.NestedScrollingChild;
 import android.support.v4.view.NestedScrollingChildHelper;
 import android.support.v4.view.NestedScrollingParent;
@@ -13,7 +28,9 @@ import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 
@@ -21,7 +38,7 @@ import android.widget.AbsListView;
  * Created by Joe on 2017/4/16.
  * Email lovejjfg@gmail.com
  */
-
+@SuppressWarnings("unused")
 public class PowerRefreshLayout extends ViewGroup implements NestedScrollingParent, NestedScrollingChild {
     private static final String TAG = PowerRefreshLayout.class.getSimpleName();
     private static final int STATE_DEFAULT = -1;
@@ -37,7 +54,8 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     private View mTarget; // the target of the gesture
     private OnRefreshListener listener;
     private RefreshStatus refreshStatus = RefreshStatus.DEFAULT;
-    private float damp = 0.5f;
+    private static final float DRAG_RATE = 0.5f;
+    private static final int INVALID_POINTER = -1;
     public int ANIMATION_DURATION = 300;
     private boolean isRefreshSuccess = false;
     private boolean isLoadSuccess = false;
@@ -46,8 +64,8 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     private boolean isAutoRefresh = false;
     private boolean isAutoLoad = true;
     private int currentStatus = STATE_DEFAULT;
-    public boolean loadEnable = true;
-    public boolean refreshEnable = true;
+    private boolean loadEnable = true;
+    private boolean refreshEnable = true;
 
     private final NestedScrollingParentHelper mNestedScrollingParentHelper;
     private final NestedScrollingChildHelper mNestedScrollingChildHelper;
@@ -60,6 +78,12 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     private boolean mNestedScrollInProgress;
     private int footHeight;
     private int headerHeight;
+    private boolean mIsBeingDragged;
+    private float mTouchSlop;
+    private int mActivePointerId;
+    private float mInitialDownY;
+    private float mInitialMotionY;
+    private Runnable refreshAction;
 
     public PowerRefreshLayout(Context context) {
         this(context, null);
@@ -70,6 +94,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         mNestedScrollingParentHelper = new NestedScrollingParentHelper(this);
         mNestedScrollingChildHelper = new NestedScrollingChildHelper(this);
         setNestedScrollingEnabled(true);
+        mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         ensureTarget();
     }
 
@@ -168,7 +193,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
 
             if (mTotalUnconsumed <= 0) {//over
                 mTotalUnconsumed = 0;
-                dy = (int) (-getScrollY() / damp);
+                dy = (int) (-getScrollY() / DRAG_RATE);
             }
             goToRefresh(-dy);
             consumed[1] = dy;
@@ -234,6 +259,14 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         // unconsumed nested scroll
 //        if (mTotalUnconsumed > 0) {
 //            finishSpinner(mTotalUnconsumed);
+        resetScroll();
+
+//        }
+        // Dispatch up our nested parent
+        stopNestedScroll();
+    }
+
+    private void resetScroll() {
         // 判断本次触摸系列事件结束时,Layout的状态
         switch (refreshStatus) {
             //下拉刷新
@@ -256,9 +289,6 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         }
         mTotalUnconsumed = 0;
         mTotalUnconsumedLoadMore = 0;
-//        }
-        // Dispatch up our nested parent
-        stopNestedScroll();
     }
 
     /**
@@ -380,6 +410,137 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         }
     }
 
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        ensureTarget();
+
+        final int action = MotionEventCompat.getActionMasked(ev);
+        int pointerIndex;
+
+
+        if (!isEnabled() || isRefreshing || isLoading || !canChildScrollUp()
+                || mNestedScrollInProgress) {
+            // Fail fast if we're not in a state where a swipe is possible
+            return false;
+        }
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                mActivePointerId = ev.getPointerId(0);
+                mIsBeingDragged = false;
+
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+                mInitialDownY = ev.getY(pointerIndex);
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                if (mActivePointerId == INVALID_POINTER) {
+                    return false;
+                }
+
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+                final float y = ev.getY(pointerIndex);
+                startDragging(y);
+                break;
+
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                mIsBeingDragged = false;
+                mActivePointerId = INVALID_POINTER;
+                break;
+        }
+
+        return mIsBeingDragged;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        final int action = MotionEventCompat.getActionMasked(ev);
+        int pointerIndex;
+
+
+        if (!isEnabled() || !canChildScrollUp()
+                || isLoading || isRefreshing || mNestedScrollInProgress) {
+            // Fail fast if we're not in a state where a swipe is possible
+            return false;
+        }
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                mActivePointerId = ev.getPointerId(0);
+                mIsBeingDragged = false;
+                break;
+
+            case MotionEvent.ACTION_MOVE: {
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+
+                final float y = ev.getY(pointerIndex);
+                startDragging(y);
+                //in this case ,just can refresh.
+                if (mIsBeingDragged) {
+                    final float overscrollTop = (y - mInitialMotionY);
+                    if (overscrollTop < 0 && getScrollY() > 0) {
+                        ev.setAction(MotionEvent.ACTION_CANCEL);
+                        return false;
+                    }
+                    currentStatus = STATE_REFRESH;
+                    goToRefresh((int) overscrollTop);
+                }
+                mInitialMotionY = y;
+                break;
+            }
+            case MotionEventCompat.ACTION_POINTER_DOWN: {
+                pointerIndex = MotionEventCompat.getActionIndex(ev);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+                mActivePointerId = ev.getPointerId(pointerIndex);
+                break;
+            }
+
+//            case MotionEventCompat.ACTION_POINTER_UP:
+//                onSecondaryPointerUp(ev);
+//                break;
+
+            case MotionEvent.ACTION_UP: {
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+
+                if (mIsBeingDragged) {
+                    mIsBeingDragged = false;
+                    resetScroll();
+                }
+                mActivePointerId = INVALID_POINTER;
+                return false;
+            }
+            case MotionEvent.ACTION_CANCEL:
+                resetScroll();
+                return false;
+        }
+
+        return true;
+    }
+
+
+    @SuppressLint("NewApi")
+    private void startDragging(float y) {
+        final float yDiff = y - mInitialDownY;
+        if (yDiff > mTouchSlop && !mIsBeingDragged) {
+            mInitialMotionY = mInitialDownY + mTouchSlop;
+            mIsBeingDragged = true;
+        }
+    }
 
     /**
      * @return Whether it is possible for the child view of this layout to
@@ -475,7 +636,6 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     public void autoLoad() {
         if (!isAutoLoad) return;
         isAutoLoad = true;
-//        measureView(footer);
         int end = footHeight;
         performAnim(bottomScroll, bottomScroll + end, new AnimListener() {
             @Override
@@ -668,20 +828,44 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         });
     }
 
+    /**
+     * call this method to make {@link #PowerRefreshLayout} know the refresh is over.
+     * you can also see {@link #stopRefresh(boolean, long)}
+     *
+     * @param isSuccess true refresh successful,false otherwise.
+     */
     public void stopRefresh(boolean isSuccess) {
+        stopRefresh(isSuccess, 0);
+    }
+
+    /**
+     * call this method to make {@link #PowerRefreshLayout} know this refresh is over.
+     *
+     * @param delay     The delay (in milliseconds) until head disappeared.
+     * @param isSuccess True refresh successful,false otherwise.
+     */
+    public void stopRefresh(boolean isSuccess, long delay) {
         isRefreshSuccess = isSuccess;
-        isRefreshing = false;
-        scrollToDefaultStatus(RefreshStatus.REFRESH_COMPLETE);
+        updateStatus(RefreshStatus.REFRESH_COMPLETE);
+        if (refreshAction == null) {
+            refreshAction = new Runnable() {
+                @Override
+                public void run() {
+                    scrollToDefaultStatus(RefreshStatus.REFRESH_COMPLETE);
+                    isRefreshing = false;
+                }
+            };
+        }
+        postDelayed(refreshAction, delay);
     }
 
     public void stopLoadMore(boolean isSuccess) {
         isLoadSuccess = isSuccess;
-        isLoading = false;
         scrollToDefaultStatus(RefreshStatus.LOAD_COMPLETE);
     }
 
     public void performScroll(int dy) {
-        float ddy = -dy * damp;
+        float ddy = -dy * DRAG_RATE;
         scrollBy(0, (int) (ddy));
     }
 

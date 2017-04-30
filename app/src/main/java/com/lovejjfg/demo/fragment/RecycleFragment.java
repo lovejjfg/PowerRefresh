@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2017.  Joe
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.lovejjfg.demo.fragment;
 
 import android.content.Context;
@@ -10,9 +23,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.lovejjfg.demo.CircleHeaderView;
 import com.lovejjfg.demo.R;
 import com.lovejjfg.demo.fragment.dummy.DummyContent;
-import com.lovejjfg.demo.header.YEHeaderView;
 import com.lovejjfg.powerrefresh.OnRefreshListener;
 import com.lovejjfg.powerrefresh.PowerRefreshLayout;
 
@@ -23,7 +36,7 @@ import com.lovejjfg.powerrefresh.PowerRefreshLayout;
  * Activities containing this fragment MUST implement the {@link OnListFragmentInteractionListener}
  * interface.
  */
-public class ItemFragment extends Fragment {
+public class RecycleFragment extends Fragment {
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
@@ -35,13 +48,13 @@ public class ItemFragment extends Fragment {
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
-    public ItemFragment() {
+    public RecycleFragment() {
     }
 
     // TODO: Customize parameter initialization
     @SuppressWarnings("unused")
-    public static ItemFragment newInstance(int columnCount) {
-        ItemFragment fragment = new ItemFragment();
+    public static RecycleFragment newInstance(int columnCount) {
+        RecycleFragment fragment = new RecycleFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_COLUMN_COUNT, columnCount);
         fragment.setArguments(args);
@@ -62,7 +75,7 @@ public class ItemFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_item_list, container, false);
         final PowerRefreshLayout mRefreshLayout = (PowerRefreshLayout) view.findViewById(R.id.refresh_layout);
-        final YEHeaderView header = new YEHeaderView(getContext());
+        final CircleHeaderView header = new CircleHeaderView(getContext());
         mRefreshLayout.addHeader(header);
         mRefreshLayout.setOnRefreshListener(new OnRefreshListener() {
             @Override
@@ -70,8 +83,7 @@ public class ItemFragment extends Fragment {
                 mRefreshLayout.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
-                        mRefreshLayout.stopRefresh(true);
+                        mRefreshLayout.stopRefresh(((int)(Math.random() * 10)) % 2 == 1, 300);
                     }
                 }, 2000);
 

@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2017.  Joe
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.lovejjfg.demo.header;
 
 import android.content.Context;
@@ -100,7 +113,7 @@ public class YEHeaderView extends FrameLayout implements HeaderListener {
      */
     @Override
     public void onRefreshComplete(int scrollY, int headerHeight, boolean isRefreshSuccess) {
-//        mRefreshTv.setText(isRefreshSuccess ? "刷新成功" : "刷新失败");
+        mRefreshTv.setText(isRefreshSuccess ? "刷新成功" : "刷新失败");
         Drawable background = mHeaderImageView.getBackground();
         if (background instanceof AnimationDrawable) {
             ((AnimationDrawable) background).stop();

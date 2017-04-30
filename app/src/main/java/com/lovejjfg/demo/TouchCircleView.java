@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2017.  Joe
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.lovejjfg.demo;
 
 import android.animation.Animator;
@@ -29,12 +42,13 @@ import java.util.ArrayList;
  * Created by Joe on 2016/4/3.
  * Email lovejjfg@gmail.com
  */
+@SuppressWarnings("unused")
 public class TouchCircleView extends View {
 
     private static String TAG = "HeaderRefresh";
-    float firstRange;
-    float secRange;
-    float thirdRange;
+    float firstRange;//draw arc
+    float secRange;//draw arrow
+    float thirdRange;//dra second arc no use
     private RectF outRectF;
     private RectF innerRectf;
     private RectF secondRectf;
@@ -58,11 +72,13 @@ public class TouchCircleView extends View {
     private static final Interpolator SWEEP_INTERPOLATOR = new AccelerateDecelerateInterpolator();
     private static final int ANGLE_ANIMATOR_DURATION = 1000;//转速
     private static final int SWEEP_ANIMATOR_DURATION = 800;
+    private static final int FRACTION_DURATION = 300;
     private static final int DELAY_TIME = 2000;
     private static final int START_ANGLE = 270;
     private static final int RESULT_TIME = 300;
     private static final int ALPHA_FULL = 255;
     private static final int MIN_SWEEP_ANGLE = 30;
+
 
     private float mCurrentGlobalAngleOffset;
     private float mCurrentGlobalAngle;
@@ -108,7 +124,6 @@ public class TouchCircleView extends View {
             startLoading();
         }
     };
-    private float outPathMax;
     private float pathMax;
     private Paint secPaint;
     private int mCurrentRadius;
@@ -155,9 +170,11 @@ public class TouchCircleView extends View {
     public int getOutCirRadius() {
         return outCirRadius;
     }
-
-    private int outCirRadius = 200;
+    //外圈半径
+    private int outCirRadius;
+    //not used in the project
     private int secondRadius = (int) (outCirRadius * 1f);
+    //
     private int innerCirRadius = outCirRadius - 30;
     private static int ARROW_WIDTH = 20 * 2;
     private static int ARROW_HEIGHT = 10 * 2;
@@ -178,22 +195,13 @@ public class TouchCircleView extends View {
     public TouchCircleView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         float density = context.getResources().getDisplayMetrics().density;
-        defaultOffset = (int) (40 * density);
-        firstRange = (int) (60f * density);
-        secRange = (int) (150 * density);
-        thirdRange = (int) (158f * density);
-
-        currentOffset = 40 * density;
-
-        outPathMax = 36 * density;
-        pathMax = 30 * density;
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.HeaderProgress, defStyleAttr, 0);
         mBorderWidth = a.getDimension(R.styleable.HeaderProgress_circleBorderWidth,
                 2 * density);
         outCirRadius = (int) a.getDimension(R.styleable.HeaderProgress_outRadius, 18 * density);
-        innerCirRadius = (int) a.getDimension(R.styleable.HeaderProgress_innerRadius, 12 * density);
+        innerCirRadius = (int) a.getDimension(R.styleable.HeaderProgress_innerRadius, 10 * density);
         secondRadius = (int) (outCirRadius * 1.5f);
-        innerCirRadius = (int) (outCirRadius * 0.6f);
+//        innerCirRadius = (int) (outCirRadius * 0.6f);
         a.recycle();
         initView();
     }
@@ -273,7 +281,8 @@ public class TouchCircleView extends View {
             paint.setAlpha((int) (percent * ALPHA_FULL));
             updateState(STATE_DRAW_ARC, false);
             resetAngle();
-            currentOffset = (1 + percent) * defaultOffset;
+            Log.e(TAG, "handleOffset: height::" + getHeight());
+            currentOffset = getHeight() - percent * defaultOffset;
             updateRectF();
             angle = (long) (percent * 360);
             Log.i(TAG, "onTouchEvent: " + angle);
@@ -403,6 +412,14 @@ public class TouchCircleView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        defaultOffset = (int) (getHeight() *0.4f);
+        firstRange = (int) (getHeight() * 0.6f);
+        secRange = getHeight();
     }
 
     @Override
@@ -719,7 +736,7 @@ public class TouchCircleView extends View {
 
         fractionAnimator = ValueAnimator.ofInt(0, ALPHA_FULL);
         fractionAnimator.setInterpolator(ANGLE_INTERPOLATOR);
-        fractionAnimator.setDuration(300);
+        fractionAnimator.setDuration(FRACTION_DURATION);
         fractionAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -733,7 +750,8 @@ public class TouchCircleView extends View {
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                postDelayed(idleAction, 300);
+                mRunning = false;
+                postDelayed(idleAction, 0);
             }
         });
         translateAnimator = ValueAnimator.ofFloat(0, 100);
@@ -808,12 +826,15 @@ public class TouchCircleView extends View {
 //    OnLoadingListener listener;
 
     public void setRefresh(boolean mRefresh) {
+        currentOffset = getHeight() * 0.5f;
         updateState(mRefresh ? STATE_DRAW_PROGRESS : STATE_DRAW_IDLE, !mRefresh);
         if (mRefresh) {
-            currentOffset = defaultOffset;
+//            currentOffset = c;
             post(startLoadingAction);
         } else {
             currentOffset = 0;
+            mObjectAnimatorSweep.cancel();
+            mObjectAnimatorAngle.cancel();
             updateRectF();
             invalidate();
         }

@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2017.  Joe
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.lovejjfg.demo.fragment;
 
 import android.content.Context;
@@ -19,11 +32,11 @@ import com.lovejjfg.powerrefresh.PowerRefreshLayout;
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
  * to handle interaction events.
- * Use the {@link MyFragment#newInstance} factory method to
+ * Use the {@link NestedScrollFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MyFragment extends Fragment {
-    private static final String TAG = MyFragment.class.getSimpleName();
+public class NestedScrollFragment extends Fragment {
+    private static final String TAG = NestedScrollFragment.class.getSimpleName();
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -33,7 +46,7 @@ public class MyFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
-    public MyFragment() {
+    public NestedScrollFragment() {
         // Required empty public constructor
     }
 
@@ -46,8 +59,8 @@ public class MyFragment extends Fragment {
      * @return A new instance of fragment MyFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static MyFragment newInstance(String param1, String param2) {
-        MyFragment fragment = new MyFragment();
+    public static NestedScrollFragment newInstance(String param1, String param2) {
+        NestedScrollFragment fragment = new NestedScrollFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -84,9 +97,7 @@ public class MyFragment extends Fragment {
                 mRefreshLayout.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        header.refreshCompleted();
-
-//                        mRefreshLayout.stopRefresh(true);
+                        mRefreshLayout.stopRefresh(((int) (Math.random() * 10)) % 2 == 1, 300);
                     }
                 }, 2000);
 
