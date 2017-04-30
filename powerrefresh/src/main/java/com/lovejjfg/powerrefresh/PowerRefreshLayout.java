@@ -34,10 +34,6 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 
-/**
- * Created by Joe on 2017/4/16.
- * Email lovejjfg@gmail.com
- */
 @SuppressWarnings("unused")
 public class PowerRefreshLayout extends ViewGroup implements NestedScrollingParent, NestedScrollingChild {
     private static final String TAG = PowerRefreshLayout.class.getSimpleName();
