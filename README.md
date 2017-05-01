@@ -1,6 +1,6 @@
 ## PowerReresh
 
-This library support **nested scroll** for refresh and load more,so you can use it with `CoordinatorLayout` and `AppBarLayout` and so no.You can design your self header or footer easily.
+This library support **nested scroll** for refresh and load more,so you can use it with `CoordinatorLayout` and `AppBarLayout` and so no.You can design your self header or footer easily.  [中文文档](https://github.com/lovejjfg/PowerRefresh/wiki/%E4%B8%AD%E6%96%87%E8%AF%B4%E6%98%8E)
 
 ![screen](https://raw.githubusercontent.com/lovejjfg/screenshort/master/power_refresh.gif)
 
