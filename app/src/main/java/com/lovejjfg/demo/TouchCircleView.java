@@ -295,7 +295,7 @@ public class TouchCircleView extends View {
                     , centerY + outCirRadius + currentOffset);
             updateState(STATE_DRAW_ARROW, false);
             percent = (dy - firstRange) / (secRange - firstRange);
-            mCurrentSweepAngle = mCurrentGlobalAngle = percent * 100;
+            mCurrentSweepAngle = mCurrentGlobalAngle = percent * 200;
             invalidate();
         }
 

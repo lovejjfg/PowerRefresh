@@ -91,6 +91,12 @@ public class RecycleFragment extends Fragment {
 
             @Override
             public void onLoadMore() {
+                mRefreshLayout.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mRefreshLayout.stopRefresh(((int)(Math.random() * 10)) % 2 == 1, 300);
+                    }
+                }, 2000);
             }
         });
 

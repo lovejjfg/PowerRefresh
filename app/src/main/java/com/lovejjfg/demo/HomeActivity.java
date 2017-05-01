@@ -21,6 +21,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
+import com.lovejjfg.demo.fragment.LoadMoreFragment;
 import com.lovejjfg.demo.fragment.NestedScrollFragment;
 import com.lovejjfg.demo.fragment.RecycleFragment;
 import com.lovejjfg.demo.fragment.ScrollFragment;
@@ -40,7 +41,7 @@ public class HomeActivity extends AppCompatActivity {
         final ArrayList<Fragment> fragments = new ArrayList<>();
         fragments.add(NestedScrollFragment.newInstance(null, "pos" + 1));
         fragments.add(ScrollFragment.newInstance("xx"));
-        fragments.add(RecycleFragment.newInstance(3));
+        fragments.add(new LoadMoreFragment());
         fragments.add(RecycleFragment.newInstance(2));
         mPager.setAdapter(new FragmentPagerAdapter(getSupportFragmentManager()) {
             @Override
@@ -61,7 +62,7 @@ public class HomeActivity extends AppCompatActivity {
                     case 1:
                         return "ScrollView";
                     case 2:
-                        return "RecycleView";
+                        return "LoadMore";
                     case 3:
                         return "RecycleView";
                 }

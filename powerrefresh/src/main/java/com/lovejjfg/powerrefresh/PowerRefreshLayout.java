@@ -58,7 +58,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
     public boolean isLoading = false;
     public boolean isRefreshing = false;
     private boolean isAutoRefresh = false;
-    private boolean isAutoLoad = true;
+    private boolean isAutoLoad = false;
     private int currentStatus = STATE_DEFAULT;
     private boolean loadEnable = true;
     private boolean refreshEnable = true;
@@ -855,9 +855,22 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         postDelayed(refreshAction, delay);
     }
 
+    Runnable loadAction = new Runnable() {
+        @Override
+        public void run() {
+            scrollToDefaultStatus(RefreshStatus.LOAD_COMPLETE);
+            isLoading = false;
+        }
+    };
+
     public void stopLoadMore(boolean isSuccess) {
+        stopLoadMore(isSuccess, 0);
+    }
+
+    public void stopLoadMore(boolean isSuccess, long delay) {
         isLoadSuccess = isSuccess;
-        scrollToDefaultStatus(RefreshStatus.LOAD_COMPLETE);
+        updateStatus(RefreshStatus.LOAD_COMPLETE);
+        postDelayed(loadAction, delay);
     }
 
     public void performScroll(int dy) {

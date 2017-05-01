@@ -122,7 +122,4 @@ public class CircleHeaderView extends FrameLayout implements HeaderListener {
         return (int) (getMeasuredHeight()*0.8f);
     }
 
-    public void refreshCompleted() {
-
-    }
 }
