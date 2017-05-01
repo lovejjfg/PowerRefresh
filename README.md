@@ -4,6 +4,9 @@ This library support **nested scroll** for refresh and load more,so you can use 
 
 ![screen](https://raw.githubusercontent.com/lovejjfg/screenshort/master/power_refresh.gif)
 
+[ ![Download](https://api.bintray.com/packages/lovejjfg/maven/PowerRefresh/images/download.svg) ](https://bintray.com/lovejjfg/maven/PowerRefresh/_latestVersion)
+
+
 ### Add Header
 
 	   CircleHeaderView header = new CircleHeaderView(getContext());
@@ -69,3 +72,17 @@ you should make `Header` impl `HeaderListener`,so you can know the refresh state
 
 * If there is only one header or footer in you project ,dont forget to extend PowerRefreshLoayout and add header or footer once.
 
+
+
+### License
+
+	   Copyright (c) 2017.  Joe
+	   Licensed under the Apache License, Version 2.0 (the "License");
+	   you may not use this file except in compliance with the License.
+	   You may obtain a copy of the License at
+	      http://www.apache.org/licenses/LICENSE-2.0
+	   Unless required by applicable law or agreed to in writing, software
+	   distributed under the License is distributed on an "AS IS" BASIS,
+	   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	   See the License for the specific language governing permissions and
+	   limitations under the License.
