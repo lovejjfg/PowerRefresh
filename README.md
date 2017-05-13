@@ -72,6 +72,9 @@ you should make `Header` impl `HeaderListener`,so you can know the refresh state
 
 * If there is only one header or footer in you project ,dont forget to extend PowerRefreshLoayout and add header or footer once.
 
+### Thanks
+
+Thanks to [@dalong982242260](https://github.com/dalong982242260/PullRefresh) and Android `SwipeRefreshLayout`.
 
 
 ### License
