@@ -4,7 +4,7 @@ This library support **nested scroll** for refresh and load more,so you can use 
 
 ![screen](https://raw.githubusercontent.com/lovejjfg/screenshort/master/power_refresh.gif)
 
-[ ![Download](https://api.bintray.com/packages/lovejjfg/maven/PowerRefresh/images/download.svg) ](https://bintray.com/lovejjfg/maven/PowerRefresh/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/lovejjfg/maven/PowerRefresh/images/download.svg) ](https://bintray.com/lovejjfg/maven/PowerRefresh/_latestVersion) [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-PowerRefresh-orange.svg?style=flat)](https://android-arsenal.com/details/1/5677)
 
 
 ### Add Header
