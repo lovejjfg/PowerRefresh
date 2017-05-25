@@ -569,6 +569,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
      * Classes that wish to override {@link SwipeRefreshLayout#canChildScrollUp()} method
      * behavior should implement this interface.
      */
+    @SuppressWarnings("WeakerAccess")
     public interface OnChildScrollUpCallback {
         /**
          * Callback that will be called when {@link SwipeRefreshLayout#canChildScrollUp()} method
@@ -614,7 +615,11 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         if (!isAutoRefresh) return;
         isRefreshing = true;
         measureView(header);
-        int end = mHeaderListener != null && mHeaderListener.getRefreshHeight() != 0 ? mHeaderListener.getRefreshHeight() : headerHeight;
+        int refreshHeight = 0;
+        if (mHeaderListener != null) {
+            refreshHeight = mHeaderListener.getRefreshHeight();
+        }
+        int end = refreshHeight != 0 ? refreshHeight : headerHeight;
         performAnim(0, -end, new AnimListener() {
             @Override
             public void onGoing() {
@@ -657,6 +662,9 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         int h = MeasureSpec.makeMeasureSpec(0,
                 MeasureSpec.UNSPECIFIED);
         v.measure(w, h);
+        if (v instanceof HeaderListener && headerHeight == 0) {
+            headerHeight = v.getMeasuredHeight();
+        }
     }
 
     /**
