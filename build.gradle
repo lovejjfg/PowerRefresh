@@ -16,9 +16,10 @@
 buildscript {
     repositories {
         jcenter()
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.1'
+        classpath 'com.android.tools.build:gradle:3.1.3'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
         // NOTE: Do not place your application dependencies here; they belong
@@ -29,12 +30,12 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+        google()
     }
 }
 subprojects { project ->
 
-    apply from:
-            rootProject.getRootDir().getAbsolutePath() + "/util.gradle"
+    apply from:rootProject.getRootDir().getAbsolutePath() + "/util.gradle"
 }
 
 task clean(type: Delete) {

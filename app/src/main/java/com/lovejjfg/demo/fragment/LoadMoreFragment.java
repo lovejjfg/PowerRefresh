@@ -24,14 +24,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-
 import com.lovejjfg.demo.CircleHeaderView;
 import com.lovejjfg.demo.FootView;
 import com.lovejjfg.demo.R;
 import com.lovejjfg.powerrecycle.PowerAdapter;
+import com.lovejjfg.powerrecycle.holder.PowerHolder;
 import com.lovejjfg.powerrefresh.OnRefreshListener;
 import com.lovejjfg.powerrefresh.PowerRefreshLayout;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +39,6 @@ import java.util.List;
  * Email lovejjfg@gmail.com
  */
 
-
 public class LoadMoreFragment extends Fragment {
 
     private PowerRefreshLayout mRefreshLayout;
@@ -48,7 +46,8 @@ public class LoadMoreFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
+        @Nullable Bundle savedInstanceState) {
 
         return inflater.inflate(R.layout.activity_main, container, false);
     }
@@ -65,7 +64,7 @@ public class LoadMoreFragment extends Fragment {
                     public void run() {
                         mRefreshLayout.stopRefresh(true, 300);
                     }
-                }, 1000);
+                }, 5000);
             }
 
             @Override
@@ -81,7 +80,7 @@ public class LoadMoreFragment extends Fragment {
                         mAdapter.appendList(mlist);
                         mRefreshLayout.setLoadEnable(mAdapter.getList().size() < 50);
                     }
-                }, 1000);
+                }, 5000);
             }
         });
         CircleHeaderView header = new CircleHeaderView(getContext());
@@ -102,7 +101,7 @@ public class LoadMoreFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
     }
 
-    static class MyHolder extends RecyclerView.ViewHolder {
+    static class MyHolder extends PowerHolder<String> {
 
         private final TextView mText;
 
@@ -111,6 +110,7 @@ public class LoadMoreFragment extends Fragment {
             mText = (TextView) itemView;
         }
 
+        @Override
         public void onBind(String s) {
             mText.setText(s);
         }
@@ -118,19 +118,20 @@ public class LoadMoreFragment extends Fragment {
 
     static class MyAdapter extends PowerAdapter<String> {
         @Override
-        public RecyclerView.ViewHolder onViewHolderCreate(ViewGroup parent, int viewType) {
+        public PowerHolder<String> onViewHolderCreate(ViewGroup parent, int viewType) {
             float density = parent.getContext().getResources().getDisplayMetrics().density;
             TextView mFoot = new TextView(parent.getContext());
             double random = Math.random();
             int height = (int) (30 * random);
-            mFoot.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (density * (40 + height))));
+            mFoot.setLayoutParams(
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (density * (40 + height))));
             mFoot.setGravity(Gravity.CENTER);
             return new MyHolder(mFoot);
         }
 
         @Override
-        public void onViewHolderBind(RecyclerView.ViewHolder holder, int position) {
-            ((MyHolder) holder).onBind("This is the " + position);
+        public void onViewHolderBind(PowerHolder<String> holder, int position) {
+            holder.onBind("This is the " + position);
         }
     }
 }

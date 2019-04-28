@@ -14,14 +14,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion COMPILE_SDK_VERSION as int
+    buildToolsVersion BUILD_TOOLS_VERSION as String
     defaultConfig {
-        applicationId "com.lovejjfg.powerrefresh"
-        minSdkVersion 14
-        targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        applicationId APP_ID
+        minSdkVersion MIN_SDK_VERSION
+        targetSdkVersion TARGET_SDK_VERSION
+        versionCode project.gitCommitCount
+        versionName project.gitTag
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -30,19 +30,21 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-//    compile project(':powerrefresh')
-    compile 'com.lovejjfg:powerrefresh:v0.0.1'
-    compile 'com.android.support:appcompat-v7:25.1.1'
-    compile 'com.lovejjfg.powerrecycle:powerrecycle:1.0.6'
-    compile 'com.android.support:design:25.1.1'
-    compile 'com.android.support:support-v4:25.1.1'
-    compile 'com.android.support:recyclerview-v7:25.1.1'
-    testCompile 'junit:junit:4.12'
+    implementation project(':powerrefresh')
+    //    compile 'com.lovejjfg:powerrefresh:v0.0.1'
+    implementation "com.android.support:appcompat-v7:${SUPPORT_V7_VERSION}"
+    implementation 'com.lovejjfg.powerrecycle:powerrecycle:1.2.5'
+    implementation "com.android.support:design:${SUPPORT_V7_VERSION}"
+    testImplementation 'junit:junit:4.12'
 }

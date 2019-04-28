@@ -32,7 +32,7 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/app_bar_height"
             android:fitsSystemWindows="true"
-            android:minHeight="120dp"
+            android:minHeight="80dp"
             app:contentScrim="?attr/colorPrimary"
             app:expandedTitleMarginBottom="70dp"
             app:layout_scrollFlags="scroll|snap|exitUntilCollapsed"

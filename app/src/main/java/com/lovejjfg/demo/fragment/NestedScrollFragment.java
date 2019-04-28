@@ -99,7 +99,7 @@ public class NestedScrollFragment extends Fragment {
                     public void run() {
                         mRefreshLayout.stopRefresh(((int) (Math.random() * 10)) % 2 == 1, 300);
                     }
-                }, 2000);
+                }, 5000);
 
             }
 
