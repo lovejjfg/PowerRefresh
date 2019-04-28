@@ -414,7 +414,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         int pointerIndex;
 
 
-        if (!isEnabled() || isRefreshing || isLoading || !canChildScrollUp()
+        if (!isEnabled() || isRefreshing || isLoading || canChildScrollUp()
                 || mNestedScrollInProgress) {
             // Fail fast if we're not in a state where a swipe is possible
             return false;
@@ -461,7 +461,7 @@ public class PowerRefreshLayout extends ViewGroup implements NestedScrollingPare
         int pointerIndex;
 
 
-        if (!isEnabled() || !canChildScrollUp()
+        if (!isEnabled() || canChildScrollUp()
                 || isLoading || isRefreshing || mNestedScrollInProgress) {
             // Fail fast if we're not in a state where a swipe is possible
             return false;
